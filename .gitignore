@@ -1,0 +1,14 @@
+.env
+.env.local
+*.pem
+*.key
+node_modules/
+venv/
+.venv/
+.DS_Store
+Thumbs.db
+dist/
+build/
+flag.*
+secrets
+secret.*
