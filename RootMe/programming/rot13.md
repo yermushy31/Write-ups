@@ -1,43 +1,45 @@
-# Write-Up : Root-Me – ELF x86 – Programmation TCP ROT
+# Write-Up : Root-Me – Programmation TCP – ROT13
 
 ## Le challenge
 
-On se connecte à un serveur TCP qui nous envoie un mot chiffré en ROT, et on doit lui renvoyer le mot déchiffré. Il faut automatiser ça car le serveur enchaîne les rounds rapidement.
-
-Un message typique reçu ressemble à ça :
-
-```
-Decrypt this: 'Uryyb'
-```
-
-Et on doit répondre `Hello`.
+On doit se connecter à un serveur TCP, qui nous envoie une chaîne encodée en ROT13, et on a **2 secondes** pour lui renvoyer la version décodée. Clairement impossible à faire à la main, donc il faut automatiser.
 
 ---
 
-## Ma solution
+## Comprendre ROT13
 
-J'ai écrit un petit script Python qui se connecte au serveur, récupère chaque message, extrait le mot chiffré avec une regex, le déchiffre et renvoie la réponse.
+ROT13 c'est un simple décalage de 13 lettres dans l'alphabet. Le truc sympa c'est que c'est **son propre inverse** : encoder et décoder c'est la même opération.
 
-### Le déchiffrement
+```
+'Uryyb' → décalage de 13 → 'Hello'
+```
 
-Le serveur utilise du ROT13, donc j'ai codé une fonction qui parcourt chaque caractère et applique le décalage :
+---
+
+## La solution
+
+J'ai écrit un script Python qui :
+1. Se connecte au serveur
+2. Attend le message
+3. Extrait la chaîne encodée avec une regex
+4. La décode et renvoie la réponse dans les 2 secondes
+
+### Le décodage ROT13
 
 ```python
 def decrypt_rot(self, message, shift=13):
     decipher = ""
     for b in message:
-        if 65 <= b <= 90:
+        if 65 <= b <= 90:                          # majuscules
             decipher += chr((b - 65 + shift) % 26 + 65)
-        elif 97 <= b <= 122:
+        elif 97 <= b <= 122:                       # minuscules
             decipher += chr((b - 97 + shift) % 26 + 97)
         else:
-            decipher += chr(b)
+            decipher += chr(b)                     # autres caractères inchangés
     return decipher
 ```
 
-Le truc pratique avec Python 3, c'est qu'itérer sur un objet `bytes` donne directement des entiers ASCII, donc pas besoin de conversion supplémentaire.
-
-### La boucle principale
+### La boucle de réception
 
 ```python
 def receive(self):
@@ -52,10 +54,10 @@ def receive(self):
             self.msgsend(a)
 ```
 
-À chaque message reçu, j'extrais le mot entre guillemets simples, je le déchiffre et je renvoie la réponse. Le `\n` dans `msgsend` est important, le serveur en a besoin pour valider.
+On reçoit le message, on attrape la chaîne entre guillemets simples, on décode et on renvoie. Tout ça se fait bien en dessous des 2 secondes imposées.
 
 ---
 
 ## Résultat
 
-Après quelques rounds, le serveur renvoie le flag. Rien de très compliqué une fois qu'on a identifié que c'était du ROT13 et qu'on automatise la boucle.
+Le serveur valide la réponse et renvoie le flag. La contrainte des 2 secondes ne pose aucun problème avec un script automatisé, Python répond quasi instantanément.
